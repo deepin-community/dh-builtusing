@@ -1,0 +1,27 @@
+#!/bin/sh
+
+. ./test_helper.sh
+
+mkdir -p "$AUTOPKGTEST_TMP/pkg/debian"
+cd       "$AUTOPKGTEST_TMP/pkg"
+
+fake_changelog > debian/changelog
+
+{
+    fake_control_header dpkg-dev
+
+    fake_control_package foo all '${dh-builtusing:dpkg-dev}'
+
+} > debian/control
+
+echo '#!/usr/bin/make -f
+%:
+	dh $@
+execute_before_dh_gencontrol:
+	dh_builtusing
+' > debian/rules
+chmod +x debian/rules
+
+fakeroot debian/rules binary
+
+check_control foo dpkg

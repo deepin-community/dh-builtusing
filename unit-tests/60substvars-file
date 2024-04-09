@@ -1,0 +1,70 @@
+#!/bin/sh
+
+{
+    fake_control_header 'dpkg-dev, gcc, red-herring1, red-herring2, red-herring3'
+
+    fake_control_package basic           all '${a:Built-Using}'
+    fake_control_package and-direct      all '${a:Built-Using}, ${dh-builtusing:gcc}'
+    fake_control_package commented       all '${a:Built-Using}, ${b:Built-Using}'
+    fake_control_package empty-lines     all '${a:Built-Using}, ${b:Built-Using}'
+    fake_control_package optional        all '${a:Built-Using}'
+    fake_control_package trailing-spaces all '${a:Built-Using}'
+
+} > debian/control
+
+echo 'a:Built-Using=a, ${dh-builtusing:dpkg-dev} , b
+' > debian/basic.substvars
+
+echo 'a:Built-Using=${dh-builtusing:dpkg-dev}
+' > debian/and-direct.substvars
+
+echo '# initial comment ${dh-builtusing:red-herring1}
+a:Built-Using=${dh-builtusing:dpkg-dev}
+# commented-equal-sign=${dh-builtusing:red-herring2}
+b:Built-Using?=${dh-builtusing:gcc}
+# final comment ${dh-builtusing:red-herring3}
+' > debian/commented.substvars
+
+echo '
+
+a:Built-Using=${dh-builtusing:dpkg-dev}
+
+b:Built-Using?=${dh-builtusing:gcc}
+
+' > debian/empty-lines.substvars
+
+echo 'a:Built-Using?=a, ${dh-builtusing:dpkg-dev} , b
+' > debian/optional.substvars
+
+echo 'a:Built-Using=${dh-builtusing:dpkg-dev}    
+' > debian/trailing-spaces.substvars
+
+$tested_command
+
+check_substvar         basic           dpkg-dev dpkg
+
+check_substvar         and-direct      dpkg-dev dpkg
+check_substvar         and-direct      gcc      gcc-defaults
+
+check_substvar         commented       dpkg-dev dpkg
+check_substvar         commented       gcc      gcc-defaults
+check_substvars_absent commented       red-herring1 red-herring2 red-herring3
+
+check_substvar         empty-lines     dpkg-dev dpkg
+check_substvar         empty-lines     gcc      gcc-defaults
+
+check_substvar         optional        dpkg-dev dpkg
+
+check_substvar         trailing-spaces dpkg-dev dpkg
+
+fakeroot dh_gencontrol
+
+check_control basic           dpkg
+check_control and-direct      dpkg
+check_control and-direct      gcc-defaults
+check_control commented       dpkg
+check_control commented       gcc-defaults
+check_control empty-lines     dpkg
+check_control empty-lines     gcc-defaults
+check_control optional        dpkg
+check_control trailing-spaces dpkg

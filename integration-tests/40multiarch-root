@@ -1,0 +1,13 @@
+#!/bin/sh
+
+dpkg --add-architecture i386
+apt-get update
+apt-get install -y libc6:i386
+
+script="$(dirname $0)/40multiarch"
+
+if [ -n "$AUTOPKGTEST_NORMAL_USER" ]; then
+    runuser -u "$AUTOPKGTEST_NORMAL_USER" /bin/sh "$script"
+else
+    sh "$script"
+fi

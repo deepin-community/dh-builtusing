@@ -1,0 +1,183 @@
+=head1 NAME
+
+dh_builtusing - set dpkg-gencontrol substitution variables for the Built-Using field
+
+=head1 SYNOPSIS
+
+B<dh_builtusing> [S<I<debhelper options>>] [B<-c> I<control>]
+
+=head1 DESCRIPTION
+
+The B<dh_builtusing> tool belongs to the debhelper collection.
+It defines B<dpkg-gencontrol> substitutions variables useful in the
+B<Built-Using> fields of the control file.
+
+Each item in such fields is the source package of a build dependency,
+with an exact (B<=>) restriction to the version used during the build.
+This version is not known in advance, and must be passed to
+B<dpkg-gencontrol> via substitution variables.
+
+B<dh_builtusing> searches the B<Built-Using> or B<Static-Built-Using>
+fields of each binary I<package> in the source control file for
+substitution of variables named B<dh-builtusing:>I<pattern>,
+looks for I<pattern> in the B<Build-Depends> fields,
+deduces the source package and version,
+then defines the variable accordingly in B<debian/>I<package>B<.substvars>.
+
+It is enabled when the B<Build-Depends> field, or a more specific
+B<Build-Depends-Arch> or B<Build-Depends-Indep> variant, mentions the
+B<dh-sequence-builtusing> virtual package.
+
+=head1 OPTIONS
+
+Common debhelper command line options and environment variables are
+recognized.
+In particular, B<dh_builtusing> only defines variables for the
+packages selected by options like B<-a>, B<-I> and B<-p>.
+
+=over 4
+
+=item B<-c> I<control>
+
+Read I<control> instead of B<debian/control>.
+
+=back
+
+=head1 PATTERN SYNTAX
+
+=head2 Character encoding
+
+In order to ensure a one-to-one correspondence between dependency
+names and substitution variables, the dot chararcter (B<.>) and the
+plus character (B<+>) characters are respectively encoded as B<D> and
+B<P>.
+
+For example, the B<dh-builtusing:gPP> variable refers to the B<g++>
+dependency.
+
+=head2 Architecture suffix
+
+The variable name may carry an architecture suffix, with the same
+meaning as in B<Build-Depends>.
+
+For example, the B<dh-builtusing:libc6:amd64> variable may be used to
+disambiguate coinstallable variants.
+
+=head2 Wildcards
+
+It may not be convenient that the variable name in B<Built-Using>
+duplicates the full name in B<Build-Depends>.
+For example, when the name contains a version, the maintainer may not
+want to manually update both fields.
+
+For such situations, the B<S> character is allowed in I<pattern>, and
+matches any sequence of characters in the name of a build-dependency,
+like the star character (B<*>) in glob patterns or the B<.*> regular
+expressions.
+
+The wildcard may select multiple installed packages,
+but an error is reported if there is no match at all.
+
+For example, the B<dh-builtusing:gcc-S-source> variable may refer to
+either B<gcc-12-source>, or B<gcc-13-source>, or both.
+
+=head1 ARCHITECTURE AND PROFILE RESTRICTIONS
+
+A dependency may be disabled by architecture or build profile
+restrictions, in which case the version does not matter, or can even
+not be computed if the dependency is not installed.  However, the
+expansion must result in a syntactically valid control file.
+
+If an architecture or build profile restriction follows a detected
+variable substitution
+and is not satisfied in the current context,
+B<dh_builtusing> sets the variable to
+B<disabled-by-restriction (= 0)>.
+
+For example, B<${dh-builtusing:libc6} [amd64]> expands as
+B<libc6 (= >I<VERSION>B<) [amd64]>
+when the host architecture matches, else as
+B<disabled-by-restriction (= 0) [amd64]>.
+
+=head1 DEBHELPER INTEGRATION
+
+=head2 DH SEQUENCER
+
+The details described here should rarely be needed.
+
+The B<dh-sequence-builtusing> virtual package in the B<Build-Depends>
+field (or a variant) is equivalent to the B<dh-builtusing> concrete
+package, except that the B<--with=builtusing> option is implicitly
+passed to B<dh>.
+
+The B<--with=builtusing> option has the same effect than an
+B<execute_before_dh_gencontrol> target invoking B<dh_builtusing>.
+
+When debugging, it may be convenient to define an
+B<override_dh_builtusing> target invoking B<dh_builtusing> with the
+B<-v> option.
+
+=head2 OTHER DEBHELPER TOOLS
+
+This part is only of interest for writers of other debhelper tools.
+
+Other debhelper tools define variables for the B<Built-Using> field,
+that may refer to dependencies not explicitly listed in the
+B<Build-Depends> field.
+So that such tools may delegate the computation of the source version,
+B<dh_builtusing>
+
+=over 4
+
+=item
+
+reads B<debian/>I<package>B<.substvars> files, in addition to the main
+control file.
+
+=item
+
+searches all installed packages when no explicit build dependency is
+found.
+
+=back
+
+For example, B<dh_sphinxdoc> may define B<sphinxdoc:Built-Using> as
+B<dh-builtusing:libjs-sphinxdoc>.
+
+=head1 BUGS AND LIMITATIONS
+
+Optional assignments in substvars files (B<?=>) are treated as normal
+assignments.
+
+When a B<Build-Depends> field contains an alternative (B<|>), both
+options may match.
+
+=head1 EXAMPLE
+
+If B<debian/control> contains
+
+  Source: foo
+  Build-Depends-Arch: dh-sequence-builtusing, gcc-12-source
+
+  Package: bar
+  Architecture: any
+  Built-Using: ${dh-builtusing:gcc-S-source}
+
+then the dependency on B<dh-sequence-builtusing> has the same effect
+than this construct in B<debian/rules>.
+
+  gcc_major = ...
+  format = $${source:Package} (= $${source:Version})
+  value != dpkg-query -Wf'$(format)' gcc-$(gcc_major)-source
+  override_dh_gencontrol-arch:
+  	dh_gencontrol -a -- -Vdh-builtusing:gcc-S-source='$(value)'
+
+=head1 SEE ALSO
+
+L<debhelper(7)>,
+L<dh_gencontrol(1)>,
+L<deb-substvars(5)>
+
+=head1 AUTHOR
+
+Nicolas Boulenguez <nicolas@debian.org>

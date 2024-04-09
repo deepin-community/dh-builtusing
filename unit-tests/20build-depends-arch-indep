@@ -1,0 +1,27 @@
+#!/bin/sh
+
+{
+   fake_control_header 'autotools-dev
+Build-Depends-Arch: dpkg-dev
+Build-Depends-Indep: gcc'
+
+    fake_control_package pa any '${dh-builtusing:autotools-dev}, ${dh-builtusing:dpkg-dev}'
+    fake_control_package pb all '${dh-builtusing:autotools-dev}, ${dh-builtusing:gcc}'
+
+} > debian/control
+
+$tested_command
+
+check_substvar         pa autotools-dev autotools-dev
+check_substvar         pa dpkg-dev      dpkg
+check_substvars_absent pa gcc-dev
+check_substvar         pb autotools-dev autotools-dev
+check_substvar         pb gcc           gcc-defaults
+check_substvars_absent pb dpkg-dev
+
+fakeroot dh_gencontrol
+
+check_control pa autotools-dev
+check_control pa dpkg
+check_control pb autotools-dev
+check_control pb gcc-defaults

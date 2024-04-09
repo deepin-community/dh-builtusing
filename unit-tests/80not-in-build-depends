@@ -1,0 +1,22 @@
+#!/bin/sh
+
+{
+    fake_control_header ''
+
+    fake_control_package exact    all '${dh-builtusing:gcc}'
+    fake_control_package encoding all '${dh-builtusing:gPP}'
+    fake_control_package pattern  all '${dh-builtusing:dpkg-devS}'
+
+} > debian/control
+
+$tested_command
+
+check_substvar exact    gcc       gcc-defaults
+check_substvar encoding gPP       gcc-defaults
+check_substvar pattern  dpkg-devS dpkg
+
+fakeroot dh_gencontrol
+
+check_control exact    gcc-defaults
+check_control encoding gcc-defaults
+check_control pattern  dpkg

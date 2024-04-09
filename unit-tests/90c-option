@@ -1,0 +1,23 @@
+#!/bin/sh
+
+{
+    fake_control_header ''
+
+    fake_control_package foo all ''
+
+} > debian/control
+
+{
+    fake_control_header dpkg-dev
+
+    fake_control_package foo all '${dh-builtusing:dpkg-dev}'
+
+} > debian/control2
+
+$tested_command -cdebian/control2
+
+check_substvar foo dpkg-dev dpkg
+
+fakeroot dh_gencontrol -- -cdebian/control2
+
+check_control foo dpkg

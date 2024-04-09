@@ -1,0 +1,34 @@
+#!/bin/sh
+
+{
+    fake_control_header 'dpkg-dev, gcc'
+
+    fake_control_package p1 any "\${dh-builtusing:dpkg-dev} [!$host], \${dh-builtusing:gcc}  <nodoc>"
+    fake_control_package p2 any "\${dh-builtusing:dpkg-dev} [!$host], \${dh-builtusing:gcc} <!nodoc>"
+    fake_control_package p3 any "\${dh-builtusing:dpkg-dev}  [$host], \${dh-builtusing:gcc}  <nodoc>"
+    fake_control_package p4 any "\${dh-builtusing:dpkg-dev}  [$host], \${dh-builtusing:gcc} <!nodoc>"
+
+} > debian/control
+
+DEB_BUILD_PROFILES=nodoc \
+$tested_command
+
+check_substvar         p1 dpkg-dev disabled-by-restriction
+check_substvar         p1 gcc      gcc-defaults
+
+check_substvar         p2 dpkg-dev disabled-by-restriction
+check_substvar         p2 gcc      disabled-by-restriction
+
+check_substvar         p3 dpkg-dev dpkg
+check_substvar         p3 gcc      gcc-defaults
+
+check_substvar         p4 dpkg-dev dpkg
+check_substvar         p4 gcc      disabled-by-restriction
+
+DEB_BUILD_PROFILES=nodoc \
+fakeroot dh_gencontrol
+
+check_control p1 gcc-defaults
+check_control p3 dpkg
+check_control p3 gcc-defaults
+check_control p4 dpkg

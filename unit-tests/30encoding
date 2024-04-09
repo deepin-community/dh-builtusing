@@ -1,0 +1,16 @@
+#!/bin/sh
+
+{
+    fake_control_header 'g++'
+
+    fake_control_package foo all '${dh-builtusing:gPP}'
+
+} > debian/control
+
+$tested_command
+
+check_substvar foo gPP gcc-defaults
+
+fakeroot dh_gencontrol
+
+check_control foo gcc-defaults

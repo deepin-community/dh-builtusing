@@ -1,5 +1,40 @@
-template-repository (1.0-1) unstable; urgency=medium
+dh-builtusing (0.0.6) unstable; urgency=medium
 
-  * Initial release
+  * When an architecture or profile restriction disables the field, expand
+    to a dummy but syntactically valid value.  Closes: #1067242.
+  * Run dpkg-gencontrol after each test, preventing similar issues.
 
- -- Tsic404 <liuheng@deepin.org>  Sat, 28 Jan 2023 13:46:49 +0800
+ -- Nicolas Boulenguez <nicolas@debian.org>  Thu, 21 Mar 2024 04:16:53 +0000
+
+dh-builtusing (0.0.5) unstable; urgency=medium
+
+  * Allow multiple packages to match a wildcard. Closes: #1052427.
+
+ -- Nicolas Boulenguez <nicolas@debian.org>  Sun, 24 Sep 2023 13:56:33 +0000
+
+dh-builtusing (0.0.4) unstable; urgency=medium
+
+  * Disable integration-tests/multiarch until the cross configuration of
+    auto testers is more documentented.
+
+ -- Nicolas Boulenguez <nicolas@debian.org>  Sat, 24 Jun 2023 06:54:19 +0000
+
+dh-builtusing (0.0.3) unstable; urgency=medium
+
+  * integration-tests/multiarch-root: add explicit shell
+
+ -- Nicolas Boulenguez <nicolas@debian.org>  Fri, 23 Jun 2023 07:06:02 +0200
+
+dh-builtusing (0.0.2) unstable; urgency=medium
+
+  * control: Multi-Arch: foreign
+  * integration-tests/40multiarch-root: fix runuser command line options
+  * Autopkgtests seem to need fakeroot despite Rules-Requires-Root: no
+
+ -- Nicolas Boulenguez <nicolas@debian.org>  Thu, 22 Jun 2023 06:24:36 +0000
+
+dh-builtusing (0.0.1) unstable; urgency=low
+
+  * Initial release. Closes: #1035888.
+
+ -- Nicolas Boulenguez <nicolas@debian.org>  Mon, 19 Jun 2023 20:13:29 +0000

@@ -1,0 +1,41 @@
+#!/bin/sh
+
+# If AUTOPKGTEST_TMP is set (autopkgtest and debian/tests/control)
+#   test the installed executable and interaction with debhelper.
+# Else (make check)
+#   test the script in the source directory.
+
+. ./test_helper.sh
+
+top_source_dir=$(pwd)
+
+host=$(dpkg-architecture -qDEB_HOST_ARCH )
+
+if [ -n "${AUTOPKGTEST_TMP:-}" ]; then
+    tested_command='dh_builtusing -v'
+    test_dir="$AUTOPKGTEST_TMP"
+else
+    rm -fr obj/unit-tests
+    tested_command="perl $top_source_dir/dh_builtusing -v"
+    test_dir="$top_source_dir/obj"
+fi
+
+for script in unit-tests/*; do
+
+    # Skip emacs backups.
+    case $script in
+        *~) continue ;;
+    esac
+
+    echo "Running $script"
+
+    test_subdir="$test_dir/$script"
+    mkdir -p "$test_subdir/debian"
+    cd       "$test_subdir"
+
+    fake_changelog > debian/changelog
+
+    . "$top_source_dir/$script"
+
+    echo "OK: $script"
+done

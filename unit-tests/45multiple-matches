@@ -1,0 +1,17 @@
+#!/bin/sh
+
+{
+    fake_control_header  'autotools-dev, dpkg-dev'
+
+    fake_control_package foo all '${dh-builtusing:S-dev}'
+
+} > debian/control
+
+$tested_command
+
+check_substvar foo S-dev "autotools-dev$re_verinfo, dpkg"
+
+fakeroot dh_gencontrol
+
+check_control foo autotools-dev
+check_control foo dpkg
