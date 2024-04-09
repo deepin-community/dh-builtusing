@@ -1,0 +1,36 @@
+#!/bin/sh
+
+{
+    fake_control_header  'gcc, g++,
+Build-Depends-Arch:  dpkg-dev
+Build-Depends-Indep: autotools-dev'
+
+    fake_control_package initial       all '${dh-builtusing:Sc}'
+    fake_control_package final         all '${dh-builtusing:gcS}'
+    fake_control_package empty         all '${dh-builtusing:gScc}'
+    fake_control_package one-char      all '${dh-builtusing:gSc}'
+    fake_control_package encoding      all '${dh-builtusing:gSP}'
+    fake_control_package ambiguous-all all '${dh-builtusing:S-dev}'
+    fake_control_package ambiguous-any any '${dh-builtusing:S-dev}'
+
+} > debian/control
+
+$tested_command
+
+check_substvar initial       Sc    gcc-defaults
+check_substvar final         gcS   gcc-defaults
+check_substvar empty         gScc  gcc-defaults
+check_substvar one-char      gSc   gcc-defaults
+check_substvar encoding      gSP   gcc-defaults
+check_substvar ambiguous-all S-dev autotools-dev
+check_substvar ambiguous-any S-dev dpkg
+
+fakeroot dh_gencontrol
+
+check_control initial       gcc-defaults
+check_control final         gcc-defaults
+check_control empty         gcc-defaults
+check_control one-char      gcc-defaults
+check_control encoding      gcc-defaults
+check_control ambiguous-all autotools-dev
+check_control ambiguous-any dpkg

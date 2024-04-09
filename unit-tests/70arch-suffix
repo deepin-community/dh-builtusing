@@ -1,0 +1,31 @@
+#!/bin/sh
+
+{
+    fake_control_header "debhelper:all, debhelper, gcc:$host, libc6:$host, gcc, libc6"
+
+    fake_control_package all-explicit         all '${dh-builtusing:debhelper:all}'
+    fake_control_package all-implicit         all '${dh-builtusing:debhelper}'
+    fake_control_package host-explicit-native all "\${dh-builtusing:gcc:$host}"
+    fake_control_package host-explicit-same   all "\${dh-builtusing:libc6:$host}"
+    fake_control_package host-implicit-native all '${dh-builtusing:gcc}'
+    fake_control_package host-implicit-same   all '${dh-builtusing:libc6}'
+
+} > debian/control
+
+$tested_command
+
+check_substvar all-explicit         debhelper:all debhelper
+check_substvar all-implicit         debhelper     debhelper
+check_substvar host-explicit-native gcc:$host     gcc-defaults
+check_substvar host-explicit-same   libc6:$host   glibc
+check_substvar host-implicit-native gcc           gcc-defaults
+check_substvar host-implicit-same   libc6         glibc
+
+fakeroot dh_gencontrol
+
+check_control all-explicit         debhelper
+check_control all-implicit         debhelper
+check_control host-explicit-native gcc-defaults
+check_control host-explicit-same   glibc
+check_control host-explicit-native gcc-defaults
+check_control host-explicit-same   glibc

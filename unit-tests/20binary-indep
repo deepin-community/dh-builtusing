@@ -1,0 +1,19 @@
+#!/bin/sh
+
+{
+    fake_control_header 'dpkg-dev, red-herring'
+
+    fake_control_package not-processed any '${dh-builtusing:red-herring}'
+    fake_control_package foo           all '${dh-builtusing:dpkg-dev}'
+
+} > debian/control
+
+$tested_command --indep
+
+check_substvar         foo           dpkg-dev dpkg
+check_substvars_absent foo           red-herring
+check_substvars_absent not-processed red-herring dpkg-dev
+
+fakeroot dh_gencontrol --indep
+
+check_control foo dpkg

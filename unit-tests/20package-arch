@@ -1,0 +1,25 @@
+#!/bin/sh
+
+if [ $host = amd64 ]; then
+    other=i386
+else
+    other=amd64
+fi
+
+{
+    fake_control_header 'dpkg-dev, red-herring'
+
+    fake_control_package foo $host  '${dh-builtusing:dpkg-dev}'
+    fake_control_package bar $other '${dh-builtusing:red-herring}'
+
+} > debian/control
+
+$tested_command
+
+check_substvar         foo dpkg-dev dpkg
+check_substvars_absent foo red-herring
+check_substvars_absent bar dpkg-dev red-herring
+
+fakeroot dh_gencontrol
+
+check_control foo dpkg

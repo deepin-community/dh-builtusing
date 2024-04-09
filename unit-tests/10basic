@@ -1,0 +1,28 @@
+#!/bin/sh
+
+{
+    fake_control_header 'dpkg-dev, gcc, red-herring'
+
+    fake_control_package foo all '
+ unrelated,
+ ${dh-builtusing:gcc},
+# ${dh-builtusing:red-herring},
+ ${dh-builtusing:dpkg-dev},
+ also-unrelated'
+
+    fake_control_package static-built-using all '
+Static-Built-Using: ${dh-staticbuiltusing:gcc}'
+
+} > debian/control
+
+$tested_command
+
+check_substvar         foo                dpkg-dev dpkg
+check_substvar         foo                gcc      gcc-defaults
+check_substvars_absent foo                red-herring
+check_substvar         static-built-using gcc      gcc-defaults static
+
+fakeroot dh_gencontrol
+
+check_control foo dpkg
+check_control foo gcc-defaults

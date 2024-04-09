@@ -1,0 +1,20 @@
+# Without gcc, Dh_Lib complains on stderr that it cannot guess the
+# architecture.
+
+Tests-Directory: .
+Tests: run-unit-tests
+# g++ for the encoding test.
+Depends: @, fakeroot, gcc, g++
+
+Tests-Directory: integration-tests
+Tests:
+ 10execute-before-dh-gencontrol
+ 20dh-with
+ 30dh-sequence
+Depends: @, fakeroot, gcc
+
+# ??? Depends: libc6 [i386] instead of -root
+# Tests-Directory: integration-tests
+# Tests: 40multiarch-root
+# Depends: @, fakeroot, gcc
+# Restrictions: needs-internet, needs-root

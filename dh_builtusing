@@ -1,0 +1,179 @@
+#!/usr/bin/perl
+# dh_builtusing - set dpkg-gencontrol substitution variables for the Built-Using field
+# SPDX-License-Identifier: GPL-3.0+
+# (GNU General Public License, version 3 or later at your convenience)
+# Copyright 2023-2023 Nicolas Boulenguez <nicolas@debian.org>
+
+# This program is free software: you can redistribute it and/or
+# modify it under the terms of the GNU General Public License as
+# published by the Free Software Foundation, either version 3 of the
+# License, or (at your option) any later version.
+# This program is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+# General Public License for more details.
+# You should have received a copy of the GNU General Public License
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
+
+use feature qw( signatures state );
+use re '/amsx';
+use strict;
+use warnings;
+
+use Debian::Debhelper::Dh_Lib;
+use Dpkg::BuildProfiles 'get_build_profiles';
+use Dpkg::Control::Info;
+use Dpkg::Deps;
+use Dpkg::Deps::Simple;
+use English '-no_match_vars';
+
+my $control_file = 'debian/control';
+init( options => { 'c=s' => \$control_file } );
+my $control = Dpkg::Control::Info->new($control_file);
+
+# pkg: a binary package that may
+#   be produced by the current build,
+#   directly or indirectly use a dh_builtusing substitution variable.
+# dep: a binary package that may
+#   match a dh_builtusing substitution variable,
+#   be installed during the build,
+#   belong to a Build-Depends field,
+#   carry an :ARCH suffix.
+
+# Deps in the Build-Depends$suffix control field, filtered by the
+# architecture and profile restrictions.
+# For alternatives, both choices are reported.
+sub build_depends : prototype($) ($suffix) {
+    state %cache;
+    my $field = "Build-Depends$suffix";
+    if ( not $cache{$field} ) {
+        $cache{$field} = [];
+        my $contents = $control->get_source->{$field};
+        if ($contents) {
+            deps_iterate(
+                deps_parse(
+                    $contents,
+                    reduce_restrictions => 1,
+                    build_profiles      => [get_build_profiles],
+                    build_dep           => 1,
+                ),
+                sub {
+                    my ($simple) = @_;
+
+                    my $result = $simple->{package};
+                    if ( $simple->{archqual} ) {
+                        $result .= q{:} . $simple->{archqual};
+                    }
+                    push @{ $cache{$field} }, $result;
+                }
+            );
+        }
+    }
+    return @{ $cache{$field} };
+}
+
+# Return source package and version of the unique installed dep
+# matching $glob.
+# Without explicit architecture suffix, filter Architecture: all or
+# host packages.
+sub source_version : prototype($) ($glob) {
+
+    # If $glob carries no architecture suffix, dpkg-query may report
+    # other/empty architectures for multiarch/uninstalled packages.
+    my $format =
+      $glob =~ m/ : /
+      ? "\${source:Package},\${source:Version}\n"
+      : "\${source:Package},\${source:Version},\${Architecture}\n";
+    my @out = qx_cmd( 'dpkg-query', '-Wf', $format, $glob );    # _;
+    my @result;
+    for (@out) {
+        chomp;
+        my @x = split qr/ , /;
+        if ( @x == 2 or $x[2] eq 'all' or $x[2] eq hostarch ) {
+            push @result, $x[0], $x[1];
+        }
+    }
+    if ( @result != 2 ) {
+        error( "$glob should match one installed package, got:\n" . join q{},
+            @out );
+    }
+    return @result;
+}
+
+my $RE_PATTERN = qr/       [[:lower:]\dS] [[:lower:]\dDPS-] +     /;
+my $RE_ARCH    = qr/ (?: : [[:lower:]]    [[:lower:]\d]     + ) ? /;
+my $RE_CAPTURE = qr{
+   [$][{]
+  ( dh- (?:static)? builtusing:         # var
+    ( $RE_PATTERN $RE_ARCH )            # pattern
+  )
+  [}]
+  ( [^,|]* )                            # restrictions
+};
+
+sub search_in_dependency_string : prototype($$) ( $pkg, $string ) {
+    while ( $string =~ m/$RE_CAPTURE/g ) {
+        my ( $var, $pattern, $restrictions ) = ( $1, $2, $3 );
+
+        my $parsed = Dpkg::Deps::Simple->new("fake $restrictions");
+        if ( $parsed->{relation} ) {
+            error("$var carries a version relation");
+        }
+
+        if (    $parsed->arch_is_concerned(hostarch)
+            and $parsed->profile_is_concerned( [get_build_profiles] ) )
+        {
+            my $regex = $pattern;
+            $regex =~ s/ D /[.]/g;
+            $regex =~ s/ P /[+]/g;
+            $regex =~ s/ S /.*/g;
+            my @bds = grep { m/ ^ $regex $ / }
+              build_depends(q{}),
+              build_depends( package_is_arch_all($pkg) ? '-Indep' : '-Arch' );
+
+            # If no build dependency matches, search installed packages.
+            if ( not @bds ) {
+                push @bds, $pattern =~ tr/DPS/.+*/r;
+            }
+
+            for my $glob (@bds) {
+                my ( $source, $version ) = source_version($glob);
+                verbose_print("In package $pkg, substvar $var += $source");
+                addsubstvar( $pkg, $var, $source, "= $version" );
+            }
+        }
+        else {
+            verbose_print(
+                "In package $pkg, substvar $var += disabled-by-restriction");
+            addsubstvar( $pkg, $var, 'disabled-by-restriction (= 0)' );
+        }
+    }
+    return;
+}
+
+# Only search in uncommented right hand sides.
+sub search_in_substvars_file : prototype($) ($pkg) {
+    my $path = 'debian/' . pkgext($pkg) . 'substvars';
+    if ( -e $path ) {
+        open my $file, q{<}, $path or error("open $path failed: $ERRNO");
+        while (<$file>) {
+            if (m/ ^ [[:alnum:]] [[:alnum:]:-]* [?]? = (.*) /) {
+                search_in_dependency_string( $pkg, $1 );
+            }
+        }
+        close $file or error("close $path failed: $ERRNO");
+    }
+    return;
+}
+
+for my $pkg ( @{ $dh{'DOPACKAGES'} } ) {
+
+    for my $field_name ( 'Built-Using', 'Static-Built-Using' ) {
+        my $field_contents = $control->get_pkg_by_name($pkg)->{$field_name};
+        if ($field_contents) {
+            search_in_dependency_string( $pkg, $field_contents );
+        }
+    }
+
+    search_in_substvars_file($pkg);
+}
