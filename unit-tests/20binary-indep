@@ -14,6 +14,6 @@ check_substvar         foo           dpkg-dev dpkg
 check_substvars_absent foo           red-herring
 check_substvars_absent not-processed red-herring dpkg-dev
 
-fakeroot dh_gencontrol --indep
+dh_gencontrol --indep
 
 check_control foo dpkg

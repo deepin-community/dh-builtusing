@@ -18,6 +18,6 @@ $tested_command -cdebian/control2
 
 check_substvar foo dpkg-dev dpkg
 
-fakeroot dh_gencontrol -- -cdebian/control2
+dh_gencontrol -- -cdebian/control2
 
 check_control foo dpkg

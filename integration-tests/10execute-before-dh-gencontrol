@@ -22,6 +22,6 @@ execute_before_dh_gencontrol:
 ' > debian/rules
 chmod +x debian/rules
 
-fakeroot debian/rules binary
+DEB_RULES_REQUIRES_ROOT=no debian/rules binary
 
 check_control foo dpkg

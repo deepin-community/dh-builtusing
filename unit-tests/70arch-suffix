@@ -21,7 +21,7 @@ check_substvar host-explicit-same   libc6:$host   glibc
 check_substvar host-implicit-native gcc           gcc-defaults
 check_substvar host-implicit-same   libc6         glibc
 
-fakeroot dh_gencontrol
+dh_gencontrol
 
 check_control all-explicit         debhelper
 check_control all-implicit         debhelper

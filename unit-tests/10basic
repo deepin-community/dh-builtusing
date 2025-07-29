@@ -22,7 +22,7 @@ check_substvar         foo                gcc      gcc-defaults
 check_substvars_absent foo                red-herring
 check_substvar         static-built-using gcc      gcc-defaults static
 
-fakeroot dh_gencontrol
+dh_gencontrol
 
 check_control foo dpkg
 check_control foo gcc-defaults

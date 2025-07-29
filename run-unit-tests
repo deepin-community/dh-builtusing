@@ -20,6 +20,11 @@ else
     test_dir="$top_source_dir/obj"
 fi
 
+# The tests call `dh_gencontrol` and it should not need to
+# chown things. This variable is documented in `rootless-builds.txt`
+# as how to state that the build should be using rootless semantics.
+export DEB_RULES_REQUIRES_ROOT=no
+
 for script in unit-tests/*; do
 
     # Skip emacs backups.

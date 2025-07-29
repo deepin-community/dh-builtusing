@@ -11,7 +11,7 @@ $tested_command
 
 check_substvar foo S-dev "autotools-dev$re_verinfo, dpkg"
 
-fakeroot dh_gencontrol
+dh_gencontrol
 
 check_control foo autotools-dev
 check_control foo dpkg

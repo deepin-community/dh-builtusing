@@ -11,6 +11,6 @@ $tested_command
 
 check_substvar foo gPP gcc-defaults
 
-fakeroot dh_gencontrol
+dh_gencontrol
 
 check_control foo gcc-defaults

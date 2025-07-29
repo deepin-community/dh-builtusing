@@ -26,7 +26,7 @@ check_substvar         p4 dpkg-dev dpkg
 check_substvar         p4 gcc      disabled-by-restriction
 
 DEB_BUILD_PROFILES=nodoc \
-fakeroot dh_gencontrol
+dh_gencontrol
 
 check_control p1 gcc-defaults
 check_control p3 dpkg
