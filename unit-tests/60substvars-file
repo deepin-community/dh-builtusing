@@ -57,7 +57,7 @@ check_substvar         optional        dpkg-dev dpkg
 
 check_substvar         trailing-spaces dpkg-dev dpkg
 
-fakeroot dh_gencontrol
+dh_gencontrol
 
 check_control basic           dpkg
 check_control and-direct      dpkg

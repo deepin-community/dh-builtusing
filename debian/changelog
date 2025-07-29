@@ -1,3 +1,10 @@
+dh-builtusing (0.0.7) unstable; urgency=medium
+
+  [ Niels Thykier ]
+  * Remove need for `fakeroot` in all tests.
+
+ -- Nicolas Boulenguez <nicolas@debian.org>  Sat, 22 Feb 2025 11:54:30 +0000
+
 dh-builtusing (0.0.6) unstable; urgency=medium
 
   * When an architecture or profile restriction disables the field, expand

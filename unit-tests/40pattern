@@ -25,7 +25,7 @@ check_substvar encoding      gSP   gcc-defaults
 check_substvar ambiguous-all S-dev autotools-dev
 check_substvar ambiguous-any S-dev dpkg
 
-fakeroot dh_gencontrol
+dh_gencontrol
 
 check_control initial       gcc-defaults
 check_control final         gcc-defaults

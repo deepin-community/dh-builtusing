@@ -19,7 +19,7 @@ check_substvar         pb autotools-dev autotools-dev
 check_substvar         pb gcc           gcc-defaults
 check_substvars_absent pb dpkg-dev
 
-fakeroot dh_gencontrol
+dh_gencontrol
 
 check_control pa autotools-dev
 check_control pa dpkg
